@@ -19,8 +19,13 @@ Plugin 'fatih/vim-go'
 
 Plugin 'vim-airline/vim-airline'
 Plugin 'vim-airline/vim-airline-themes'
-Plugin 'vim-scripts/argtextobj.vim'
 
+Plugin 'vim-scripts/argtextobj.vim'
+"Plugin 'vim-scripts/camelcasemotion.git'
+
+"Plugin 'scrooloose/nerdcommenter'
+Plugin 'tpope/vim-commentary'
+Plugin 'tpope/vim-obsession'
 call vundle#end()
 
 hi clear SignColumn " Clear Columns for syntastic
