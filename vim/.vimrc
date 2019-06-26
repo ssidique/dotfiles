@@ -23,7 +23,6 @@ Plugin 'vim-airline/vim-airline-themes'
 Plugin 'vim-scripts/argtextobj.vim'
 "Plugin 'vim-scripts/camelcasemotion.git'
 
-"Plugin 'scrooloose/nerdcommenter'
 Plugin 'tpope/vim-commentary'
 Plugin 'tpope/vim-obsession'
 call vundle#end()
@@ -49,8 +48,6 @@ set hlsearch
 set pastetoggle=<F3>
 
 set hidden
-" View and search through open buffers
-nnoremap gb :ls<CR>:b<Space>
 
 ":Ggrep quickfix window
 autocmd QuickFixCmdPost *grep* cwindow
