@@ -25,6 +25,9 @@ Plugin 'vim-scripts/argtextobj.vim'
 
 Plugin 'tpope/vim-commentary'
 Plugin 'tpope/vim-obsession'
+
+Plugin 'terryma/vim-multiple-cursors'
+Plugin 'easymotion/vim-easymotion'
 call vundle#end()
 
 hi clear SignColumn " Clear Columns for syntastic
