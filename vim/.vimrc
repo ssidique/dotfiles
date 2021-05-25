@@ -6,8 +6,7 @@ set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 
 Plugin 'VundleVim/Vundle.vim'
-Plugin 'scrooloose/nerdtree'
-Plugin 'Xuyuanp/nerdtree-git-plugin'
+Plugin 'preservim/nerdtree'
 Plugin 'vim-syntastic/syntastic'
 Plugin 'ctrlpvim/ctrlp.vim'
 
@@ -15,7 +14,6 @@ Plugin 'airblade/vim-gitgutter'
 Plugin 'tpope/vim-fugitive'
 
 Plugin 'lyuts/vim-rtags'
-Plugin 'fatih/vim-go'
 
 Plugin 'vim-airline/vim-airline'
 Plugin 'vim-airline/vim-airline-themes'
@@ -28,6 +26,10 @@ Plugin 'tpope/vim-obsession'
 
 Plugin 'terryma/vim-multiple-cursors'
 Plugin 'easymotion/vim-easymotion'
+Plugin 'christoomey/vim-tmux-navigator'
+Plugin 'preservim/vimux'
+Plugin 'rust-lang/rust.vim'
+
 call vundle#end()
 
 hi clear SignColumn " Clear Columns for syntastic
@@ -57,8 +59,8 @@ autocmd QuickFixCmdPost *grep* cwindow
 
 "---------------Vim Airline ----------"
 let g:airline#extensions#tabline#enabled = 1
-:nnoremap <C-h> :bprev<CR>
-:nnoremap <C-l> :bnext<CR>
+":nnoremap <C-h> :bprev<CR>
+":nnoremap <C-l> :bnext<CR>
 
 "-----------CTRL+P-----------------"
 nmap <leader>bb :CtrlPBuffer<cr>
@@ -88,3 +90,12 @@ let g:syntastic_mode_map = {"mode" : "passive"}
 let g:syntastic_cpp_clang_check_args = "-p /home/ssidique/memsql/debug"
 let g:syntastic_cpp_clang_check_post_args = ""
 
+"-----------Vimux---------------"
+map <Leader>vp :VimuxPromptCommand<CR>
+map <Leader>vl :VimuxRunLastCommand<CR>
+map <Leader>vi :VimuxInspectRunner<CR>
+map <Leader>vz :VimuxZoomRunner<CR>
+
+
+"-----------tmux-navigator---------------"
+let g:tmux_navigator_disable_when_zoomed = 1
