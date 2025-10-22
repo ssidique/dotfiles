@@ -9,10 +9,13 @@ This is a personal dotfiles repository for managing Linux development environmen
 ## Repository Structure
 
 The dotfiles are organized by tool/application as Stow packages:
-- `vim/` - Contains `.vimrc` with Vundle plugin manager configuration
+- `git/` - Contains `.gitconfig` with custom aliases (brd, note) and delta configuration
+- `nvim/` - Contains LazyVim configuration under `.config/nvim/`
 - `tmux/` - Contains `.tmux.conf` with TPM (Tmux Plugin Manager) setup
+- `vim/` - Contains `.vimrc` with Vundle plugin manager configuration
+- `zsh/` - Contains `.zshrc` with Oh My Zsh, Powerlevel10k, and vi-mode configuration
 - `i3/` - Contains i3 window manager configuration with custom keybindings
-- `install.sh` - Bootstrap script for installing dependencies and setting up the environment
+- `install.sh` - Automated bootstrap script for complete environment setup
 
 ## Using GNU Stow
 
@@ -61,58 +64,84 @@ After modifying the repository structure:
 stow -R vim  # Restow to update symlinks
 ```
 
-## Installation and Setup
+## Quick Start: Setting Up a New Environment
 
-### Initial Environment Setup
+### Automated Installation (Recommended)
 
-The `install.sh` file contains the complete setup process for a new system. Key dependencies installed:
+The `install.sh` script automates the entire setup process. Simply run:
 
 ```bash
-# Core build tools
-sudo apt-get install build-essential
-sudo apt install clang
-
-# Package manager for dotfiles
-apt-get install stow
-
-# Editor and related tools
-apt-get install nvim
-git clone https://github.com/LazyVim/starter ~/.config/nvim
-
-# Shell
-apt install zsh
-chsh -s $(which zsh) $USER
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-# CLI utilities
-apt-get install ripgrep
-apt install fd-find
-sudo apt install bat
-git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install
-
-# Zsh plugins
-git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-completions
-git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/themes/powerlevel10k
-
-# Tmux plugin manager
-git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+git clone https://github.com/yourusername/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+chmod +x install.sh
+./install.sh
 ```
 
-### Plugin Installation
+This script will:
+1. Update package lists
+2. Install all required dependencies and tools
+3. Set up Oh My Zsh with plugins and Powerlevel10k theme
+4. Install plugin managers (TPM, Vundle)
+5. Install git delta for better diffs
+6. Automatically stow all dotfiles
+7. Set Zsh as the default shell
 
-**Vim**: First-time setup requires installing Vundle and plugins:
+After installation, follow the post-installation steps displayed by the script.
+
+### Manual Installation
+
+If you prefer to install components individually, the `install.sh` file contains the complete setup process. Key dependencies installed:
+
+The script installs:
+- **Build tools**: build-essential, clang
+- **GNU Stow**: For dotfile management
+- **Editors**: Neovim (with LazyVim)
+- **Shell**: Zsh with Oh My Zsh, Powerlevel10k theme
+- **CLI utilities**: ripgrep, fd, bat, fzf, zoxide, tldr
+- **Git tools**: delta (enhanced diffs)
+- **Plugin managers**: TPM (tmux), Vundle (vim)
+- **Zsh plugins**: autosuggestions, syntax-highlighting, completions
+- **fzf-git.sh**: Git fuzzy finder integration
+
+The script is idempotent - it checks if tools are already installed before attempting installation.
+
+### Post-Installation Steps
+
+After running `install.sh`, complete the setup with these steps:
+
+1. **Restart your terminal** or run `source ~/.zshrc`
+2. **Tmux plugins**: In tmux, press `Ctrl+a I` (capital I) to install plugins
+3. **Vim plugins**: In vim, run `:PluginInstall` to install all Vundle plugins
+4. **Powerlevel10k**: Run `p10k configure` to customize your prompt
+5. **Neovim**: LazyVim plugins auto-install on first `nvim` launch
+6. **Shell change**: Log out and back in for Zsh to become default shell
+
+## Useful Command Discovery
+
+### tldr - Simplified Man Pages
+
+Use `tldr` to get quick, practical examples for commands:
+
 ```bash
-git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
-# Then in vim, run: :PluginInstall
+tldr tar        # See common tar usage examples
+tldr docker     # Docker command examples
+tldr git        # Git command examples
+tldr fzf        # fzf usage examples
 ```
 
-**Tmux**: After installing TPM, install plugins:
+### Searchable Command History with Comments
+
+The `.zshrc` has `setopt interactivecomments` enabled, allowing you to add comments to commands that become searchable:
+
 ```bash
-# In tmux, press: prefix + I (capital i)
-# Default prefix in this config is C-a (not C-b)
+# Add comments to your commands
+docker ps -a  # show all containers including stopped ones
+git log --oneline --graph  # pretty git log with branches
+
+# Later, press Ctrl-R and type "show all containers" to find the docker command!
 ```
+
+This makes your command history self-documenting and easily searchable with fzf.
 
 ## Configuration Architecture
 
