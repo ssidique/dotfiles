@@ -1,0 +1,38 @@
+[core]
+	pager = delta
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+    dark = true
+[merge]
+	conflictStyle = zdiff3
+[user]
+	email = ssidique8@gmail.com
+	name = Sohail Sidique
+[push]
+	autoSetupRemote = true
+[alias]
+    # Show branches with descriptions
+    brd = "!f() { \
+        for branch in $(git branch --format='%(refname:short)'); do \
+            desc=$(git config branch.$branch.description); \
+            if [ -n \"$desc\" ]; then \
+                printf \"\\033[33m%-25s\\033[0m \\033[36m📝 %s\\033[0m\\n\" \"$branch\" \"$desc\"; \
+            else \
+                printf \"\\033[33m%-25s\\033[0m\\n\" \"$branch\"; \
+            fi; \
+        done; \
+    }; f"
+
+    # Add note to branch
+    note = "!f() { \
+        if [ -z \"$1\" ]; then \
+            echo 'Usage: git note <branch> <description>'; \
+            exit 1; \
+        fi; \
+        branch=\"$1\"; \
+        shift; \
+        git config branch.\"$branch\".description \"$*\"; \
+        echo \"✓ Note added to '$branch'\"; \
+    }; f"
