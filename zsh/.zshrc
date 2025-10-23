@@ -164,17 +164,18 @@ export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 
-# FZF color scheme (matches terminal colors)
-export FZF_DEFAULT_OPTS='
-  --height 40% --layout=reverse --border
-  --color=fg:#d0d0d0,bg:#121212,hl:#5f87af
-  --color=fg+:#d0d0d0,bg+:#262626,hl+:#5fd7ff
-  --color=info:#afaf87,prompt:#d7005f,pointer:#af5fff
-  --color=marker:#87ff00,spinner:#af5fff,header:#87afaf
-  --bind ctrl-/:toggle-preview
-  --bind ctrl-u:preview-page-up
-  --bind ctrl-d:preview-page-down
-'
+# Bat theme (Catppuccin)
+export BAT_THEME="Catppuccin Mocha"
+
+# FZF color scheme (Catppuccin Mocha)
+export FZF_DEFAULT_OPTS=" \
+--color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 \
+--color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
+--color=marker:#f5e0dc,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8 \
+--height 40% --layout=reverse --border \
+--bind ctrl-/:toggle-preview \
+--bind ctrl-u:preview-page-up \
+--bind ctrl-d:preview-page-down"
 
 # =========================
 # FZF Functions & Aliases
@@ -284,6 +285,23 @@ ftmux() {
 # Aliases for quick access
 alias fzp='fzf --preview "bat --style=numbers --color=always {}"'
 alias fzd='fcd'
+
+# =========================
+# eza (modern ls) aliases
+# =========================
+if command -v eza &> /dev/null; then
+    alias ls='eza --icons'
+    alias ll='eza -la --icons --git'
+    alias la='eza -a --icons'
+    alias lt='eza --tree --level=2 --icons'
+    alias l='eza -lbF --git --icons'
+    alias tree='eza --tree --icons'
+fi
+
+# =========================
+# Additional aliases
+# =========================
+alias lg='lazygit'  # Quick access to lazygit
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

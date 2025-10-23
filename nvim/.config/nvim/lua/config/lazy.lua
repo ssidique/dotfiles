@@ -18,6 +18,33 @@ require("lazy").setup({
   spec = {
     -- add LazyVim and import its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },
+
+    -- Recommended Extras for productivity
+
+    -- Editor enhancements
+    { import = "lazyvim.plugins.extras.editor.outline" },     -- Better code outline/navigation
+    { import = "lazyvim.plugins.extras.editor.telescope" },   -- Telescope fuzzy finder (if not default)
+
+    -- Coding enhancements
+    { import = "lazyvim.plugins.extras.coding.luasnip" },     -- Snippet engine
+    { import = "lazyvim.plugins.extras.coding.yanky" },       -- Better yank/paste management
+
+    -- Git integration
+    { import = "lazyvim.plugins.extras.util.project" },       -- Project management
+
+    -- UI improvements
+    { import = "lazyvim.plugins.extras.ui.edgy" },            -- Better window management
+
+    -- Formatting
+    { import = "lazyvim.plugins.extras.formatting.prettier" }, -- Prettier for JS/TS/etc
+
+    -- Language support (add languages you use)
+    { import = "lazyvim.plugins.extras.lang.json" },          -- JSON support
+    { import = "lazyvim.plugins.extras.lang.markdown" },      -- Enhanced markdown
+    { import = "lazyvim.plugins.extras.lang.python" },        -- Python support (example)
+    { import = "lazyvim.plugins.extras.lang.docker" },        -- Docker support
+    { import = "lazyvim.plugins.extras.lang.git" },           -- Git file support
+
     -- import/override with your plugins
     { import = "plugins" },
   },

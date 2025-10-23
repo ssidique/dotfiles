@@ -137,6 +137,64 @@ else
     print_info "tldr already installed"
 fi
 
+# eza (modern ls replacement)
+if ! command_exists eza; then
+    print_info "Installing eza"
+    sudo mkdir -p /etc/apt/keyrings
+    wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list
+    sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+    sudo apt-get update
+    sudo apt-get install -y eza
+    print_info "eza installed"
+else
+    print_info "eza already installed"
+fi
+
+# lazygit (TUI for git)
+if ! command_exists lazygit; then
+    print_info "Installing lazygit"
+    LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+    curl -Lo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+    tar xf /tmp/lazygit.tar.gz -C /tmp lazygit
+    sudo install /tmp/lazygit /usr/local/bin
+    rm /tmp/lazygit.tar.gz /tmp/lazygit
+    print_info "lazygit installed"
+else
+    print_info "lazygit already installed"
+fi
+
+# GitHub CLI
+if ! command_exists gh; then
+    print_info "Installing GitHub CLI (gh)"
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+    sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    sudo apt-get update
+    sudo apt-get install -y gh
+    print_info "GitHub CLI installed"
+else
+    print_info "GitHub CLI already installed"
+fi
+
+# tmuxinator (tmux session manager)
+if ! command_exists tmuxinator; then
+    print_info "Installing tmuxinator"
+    sudo apt-get install -y tmuxinator
+    print_info "tmuxinator installed"
+else
+    print_info "tmuxinator already installed"
+fi
+
+# tree-sitter-cli (for nvim-treesitter)
+if ! command_exists tree-sitter; then
+    print_info "Installing tree-sitter-cli"
+    npm install -g tree-sitter-cli
+    print_info "tree-sitter-cli installed"
+else
+    print_info "tree-sitter-cli already installed"
+fi
+
 # ==============================================================================
 # Step 5: Install and configure Zsh
 # ==============================================================================
@@ -278,6 +336,8 @@ echo "  2. In tmux, press 'Ctrl+a I' (capital i) to install tmux plugins"
 echo "  3. In vim, run ':PluginInstall' to install vim plugins"
 echo "  4. Run 'p10k configure' to customize your Powerlevel10k prompt"
 echo "  5. LazyVim plugins will auto-install on first nvim launch"
+echo "  6. Install a Nerd Font for icons: https://www.nerdfonts.com/"
+echo "  7. Authenticate GitHub CLI: gh auth login"
 echo ""
 print_warning "You may need to log out and log back in for Zsh to become the default shell"
 echo ""
