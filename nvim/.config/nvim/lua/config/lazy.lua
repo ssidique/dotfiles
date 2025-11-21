@@ -21,6 +21,9 @@ require("lazy").setup({
 
     -- Recommended Extras for productivity
 
+    -- UI improvements (must come before outline)
+    { import = "lazyvim.plugins.extras.ui.edgy" },            -- Better window management
+
     -- Editor enhancements
     { import = "lazyvim.plugins.extras.editor.outline" },     -- Better code outline/navigation
     { import = "lazyvim.plugins.extras.editor.telescope" },   -- Telescope fuzzy finder (if not default)
@@ -31,9 +34,6 @@ require("lazy").setup({
 
     -- Git integration
     { import = "lazyvim.plugins.extras.util.project" },       -- Project management
-
-    -- UI improvements
-    { import = "lazyvim.plugins.extras.ui.edgy" },            -- Better window management
 
     -- Formatting
     { import = "lazyvim.plugins.extras.formatting.prettier" }, -- Prettier for JS/TS/etc

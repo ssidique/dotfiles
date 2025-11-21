@@ -312,3 +312,5 @@ export NVM_DIR="$HOME/.nvm"
 
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /usr/bin/terraform terraform
+
+[ -f "/home/ssidique/.ghcup/env" ] && . "/home/ssidique/.ghcup/env" # ghcup-env
