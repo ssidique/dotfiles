@@ -110,6 +110,13 @@ export FCEDIT='nvim -c "set ft=zsh"'
 # Allow comments in interactive shell (useful for searchable command history)
 setopt interactivecomments
 
+# History settings
+HISTSIZE=50000
+SAVEHIST=50000
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt SHARE_HISTORY
+
 # Compilation flags
 # export ARCHFLAGS="-arch $(uname -m)"
 
@@ -292,6 +299,66 @@ ftmux() {
   session=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | fzf --exit-0) && tmux switch-client -t "$session"
 }
 
+# fe - Fuzzy edit any file (with preview)
+fe() {
+  local file
+  file=$(fd --type f --hidden --follow --exclude .git | fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}') && $EDITOR "$file"
+}
+
+# fgl - Fuzzy git log browser
+fgl() {
+  git log --oneline --color=always | fzf --ansi --preview 'git show --color=always {1}' | awk '{print $1}' | xargs -r git show
+}
+
+# fga - Fuzzy git add (stage files interactively)
+fga() {
+  git status -s | fzf -m --preview 'git diff --color=always {2}' | awk '{print $2}' | xargs -r git add
+}
+
+# fgg - Fuzzy git grep (search tracked files, open at line)
+fgg() {
+  local result
+  result=$(git grep --color=always --line-number "${@:-.}" | fzf --ansi --preview 'bat --color=always --highlight-line {2} {1}' --delimiter ':' --preview-window '+{2}-10')
+  if [ -n "$result" ]; then
+    local file=$(echo "$result" | cut -d':' -f1)
+    local line=$(echo "$result" | cut -d':' -f2)
+    $EDITOR "+$line" "$file"
+  fi
+}
+
+# fman - Fuzzy man page browser
+fman() {
+  man -k . | fzf --preview 'man {1}' | awk '{print $1}' | xargs -r man
+}
+
+# fdocker - Browse docker containers
+fdocker() {
+  local container
+  container=$(docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}" | sed 1d | fzf --preview 'docker logs --tail 50 {1}' | awk '{print $1}')
+  [ -n "$container" ] && echo "$container"
+}
+
+# fdex - Fuzzy exec into a running docker container
+fdex() {
+  local container
+  container=$(docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}" | sed 1d | fzf | awk '{print $1}')
+  [ -n "$container" ] && docker exec -it "$container" /bin/sh
+}
+
+# fdlogs - Fuzzy follow docker container logs
+fdlogs() {
+  local container
+  container=$(docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}" | sed 1d | fzf --preview 'docker logs --tail 100 {1} 2>&1' | awk '{print $1}')
+  [ -n "$container" ] && docker logs -f --tail 100 "$container"
+}
+
+# fnpm - Fuzzy run an npm script
+fnpm() {
+  local script
+  script=$(cat package.json 2>/dev/null | jq -r '.scripts | keys[]' 2>/dev/null | fzf --preview 'cat package.json | jq -r ".scripts.{}"')
+  [ -n "$script" ] && npm run "$script"
+}
+
 # Aliases for quick access
 alias fzp='fzf --preview "bat --style=numbers --color=always {}"'
 alias fzd='fcd'
@@ -316,9 +383,104 @@ bindkey '^ ' autosuggest-accept
 bindkey '^[f' forward-word
 
 # =========================
+# Navigation aliases
+# =========================
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# =========================
+# Git aliases (supplementing oh-my-zsh git plugin)
+# =========================
+alias glog='git log --oneline --graph --decorate -20'
+alias gundo='git reset --soft HEAD~1'
+
+# =========================
+# Docker aliases
+# =========================
+alias dps='docker ps'
+alias dpsa='docker ps -a'
+alias di='docker images'
+alias dex='docker exec -it'
+alias dprune='docker system prune -af'
+
+# =========================
+# System utilities
+# =========================
+alias df='df -h'
+alias du='du -h'
+alias free='free -h'
+alias ports='netstat -tulanp'
+alias update='sudo apt update && sudo apt upgrade -y'
+alias cleanup='sudo apt autoremove -y && sudo apt autoclean'
+command -v htop &> /dev/null && alias top='htop'
+
+# =========================
+# Config shortcuts
+# =========================
+alias zshrc='$EDITOR ~/.zshrc'
+alias reload='source ~/.zshrc'
+
+# =========================
+# Python / Node shortcuts
+# =========================
+alias py='python3'
+alias venv='python3 -m venv'
+alias activate='source venv/bin/activate'
+alias ni='npm install'
+alias nr='npm run'
+alias ns='npm start'
+alias nt='npm test'
+
+# =========================
 # Additional aliases
 # =========================
 alias lg='lazygit'  # Quick access to lazygit
+
+# =========================
+# General utility functions
+# =========================
+# Quick directory creation and navigation
+mkcd() { mkdir -p "$1" && cd "$1"; }
+
+# Search for a process
+psgrep() { ps aux | grep -v grep | grep -i "$1"; }
+
+# Get public IP
+myip() { curl -s ifconfig.me; echo; }
+
+# Quick serve current directory
+serve() { python3 -m http.server ${1:-8000}; }
+
+# =========================
+# Neovim distro switcher (NVIM_APPNAME)
+# =========================
+alias nvim-astro='NVIM_APPNAME=astro nvim'
+alias nvim-lazy='NVIM_APPNAME=lazy nvim'
+alias nvim-chad='NVIM_APPNAME=nvchad nvim'
+alias avim='NVIM_APPNAME=astro nvim'
+alias vim='nvim'
+alias vi='nvim'
+
+# fzf neovim config switcher
+nvims() {
+  local configs=(astro lazy nvchad default)
+  local config=$(printf '%s\n' "${configs[@]}" | fzf --prompt="Neovim Config > " --height=10 --layout=reverse --border)
+  if [ -n "$config" ]; then
+    if [ "$config" = "default" ]; then
+      NVIM_APPNAME= nvim "$@"
+    else
+      NVIM_APPNAME=$config nvim "$@"
+    fi
+  fi
+}
+
+# =========================
+# Go / Rust environment
+# =========================
+export PATH="$HOME/.cargo/bin:$HOME/go/bin:/usr/local/go/bin:$PATH"
+[ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
+export GOPATH="$HOME/go"
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
@@ -340,3 +502,7 @@ source "/home/ssidique/.openclaw/completions/openclaw.zsh"
 
 # direnv hook
 eval "$(direnv hook zsh)"
+
+# Secrets and AWS profile (kept in separate, un-committed files)
+[ -f ~/.anthropic_keys ] && source ~/.anthropic_keys
+[ -f ~/.aws_aliases ] && source ~/.aws_aliases
