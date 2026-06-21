@@ -1,5 +1,12 @@
 export PATH="$HOME/.local/bin:$PATH"
 
+# Auto-launch tmux on interactive terminals (fresh, independent session each).
+# Skips: non-interactive shells, nested tmux, VS Code terminal, NO_AUTO_TMUX=1.
+if [[ $- == *i* ]] && [[ -z $TMUX ]] && [[ -z $NO_AUTO_TMUX ]] \
+   && [[ $TERM_PROGRAM != vscode ]] && command -v tmux &>/dev/null; then
+  exec tmux new-session
+fi
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -96,6 +103,9 @@ source $ZSH/oh-my-zsh.sh
  else
    export EDITOR='nvim'
  fi
+
+# Configure fc to use zsh filetype for syntax highlighting
+export FCEDIT='nvim -c "set ft=zsh"'
 
 # Allow comments in interactive shell (useful for searchable command history)
 setopt interactivecomments
@@ -299,6 +309,13 @@ if command -v eza &> /dev/null; then
 fi
 
 # =========================
+# zsh-autosuggestions
+# =========================
+
+bindkey '^ ' autosuggest-accept
+bindkey '^[f' forward-word
+
+# =========================
 # Additional aliases
 # =========================
 alias lg='lazygit'  # Quick access to lazygit
@@ -312,5 +329,14 @@ export NVM_DIR="$HOME/.nvm"
 
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /usr/bin/terraform terraform
+complete -C '/usr/local/bin/aws_completer' aws
 
 [ -f "/home/ssidique/.ghcup/env" ] && . "/home/ssidique/.ghcup/env" # ghcup-env
+
+export ECS_CLUSTER="chaingrab-cluster"
+
+# OpenClaw Completion
+source "/home/ssidique/.openclaw/completions/openclaw.zsh"
+
+# direnv hook
+eval "$(direnv hook zsh)"
