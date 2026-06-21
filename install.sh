@@ -298,6 +298,12 @@ print_header "Stowing dotfiles"
 DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DOTFILES_DIR"
 
+# Pull in submodules (nvim config lives in the ssidique/nvim-config repo)
+if [ -f .gitmodules ]; then
+    print_info "Initializing git submodules (nvim config)"
+    git submodule update --init --recursive
+fi
+
 # List of packages to stow
 PACKAGES=("git" "tmux" "vim" "nvim" "zsh" "tldr")
 
