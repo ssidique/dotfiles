@@ -498,10 +498,10 @@ complete -C '/usr/local/bin/aws_completer' aws
 export ECS_CLUSTER="chaingrab-cluster"
 
 # OpenClaw Completion
-source "/home/ssidique/.openclaw/completions/openclaw.zsh"
+[ -f "$HOME/.openclaw/completions/openclaw.zsh" ] && source "$HOME/.openclaw/completions/openclaw.zsh"
 
 # direnv hook
-eval "$(direnv hook zsh)"
+command -v direnv &> /dev/null && eval "$(direnv hook zsh)"
 
 # Secrets and AWS profile (kept in separate, un-committed files)
 [ -f ~/.anthropic_keys ] && source ~/.anthropic_keys
