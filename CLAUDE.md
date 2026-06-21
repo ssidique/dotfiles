@@ -10,7 +10,7 @@ This is a personal dotfiles repository for managing Linux development environmen
 
 The dotfiles are organized by tool/application as Stow packages:
 - `git/` - Contains `.gitconfig` with custom aliases (brd, note) and delta configuration
-- `nvim/` - Contains LazyVim configuration under `.config/nvim/`
+- `nvim/` - Neovim configuration at `.config/nvim/`, provided as a **git submodule** pointing to the [`ssidique/nvim-config`](https://github.com/ssidique/nvim-config) repo (the canonical Neovim config)
 - `tmux/` - Contains `.tmux.conf` with TPM (Tmux Plugin Manager) setup
 - `vim/` - Contains `.vimrc` with Vundle plugin manager configuration
 - `zsh/` - Contains `.zshrc` with Oh My Zsh, Powerlevel10k, and vi-mode configuration
@@ -64,6 +64,23 @@ After modifying the repository structure:
 stow -R vim  # Restow to update symlinks
 ```
 
+### Neovim Submodule (nvim-config)
+
+The `nvim/` package is a git submodule tracking [`ssidique/nvim-config`](https://github.com/ssidique/nvim-config). Stow symlinks `~/.config/nvim` to it as usual, but editing and updating differ from the other packages:
+
+```bash
+# Edit the nvim config (this dir IS the nvim-config checkout):
+cd ~/.config/nvim
+# ...make changes...
+git add -A && git commit && git push   # commits go to the nvim-config repo
+
+# Pull the latest nvim-config and record the new pointer in dotfiles:
+git submodule update --remote nvim/.config/nvim
+git add nvim/.config/nvim && git commit -m "nvim: bump submodule"
+```
+
+Note: dotfiles pins a specific `nvim-config` commit. Pushing changes to `nvim-config` does **not** update dotfiles until you bump the pointer as shown above.
+
 ## Quick Start: Setting Up a New Environment
 
 ### Automated Installation (Recommended)
@@ -71,11 +88,14 @@ stow -R vim  # Restow to update symlinks
 The `install.sh` script automates the entire setup process. Simply run:
 
 ```bash
-git clone https://github.com/yourusername/dotfiles.git ~/dotfiles
+# --recurse-submodules pulls in the nvim config (ssidique/nvim-config)
+git clone --recurse-submodules https://github.com/yourusername/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 chmod +x install.sh
 ./install.sh
 ```
+
+> If you cloned without `--recurse-submodules`, run `git submodule update --init --recursive` before stowing (`install.sh` does this automatically).
 
 This script will:
 1. Update package lists
@@ -95,7 +115,7 @@ If you prefer to install components individually, the `install.sh` file contains
 The script installs:
 - **Build tools**: build-essential, clang
 - **GNU Stow**: For dotfile management
-- **Editors**: Neovim (with LazyVim)
+- **Editors**: Neovim (config pulled from the `nvim-config` submodule)
 - **Shell**: Zsh with Oh My Zsh, Powerlevel10k theme
 - **CLI utilities**: ripgrep, fd, bat, fzf, zoxide, tldr
 - **Git tools**: delta (enhanced diffs)
@@ -113,7 +133,7 @@ After running `install.sh`, complete the setup with these steps:
 2. **Tmux plugins**: In tmux, press `Ctrl+a I` (capital I) to install plugins
 3. **Vim plugins**: In vim, run `:PluginInstall` to install all Vundle plugins
 4. **Powerlevel10k**: Run `p10k configure` to customize your prompt
-5. **Neovim**: LazyVim plugins auto-install on first `nvim` launch
+5. **Neovim**: plugins auto-install on first `nvim` launch (config comes from the `nvim-config` submodule)
 6. **Shell change**: Log out and back in for Zsh to become default shell
 
 ## Useful Command Discovery
