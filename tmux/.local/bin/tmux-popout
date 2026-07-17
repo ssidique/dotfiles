@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Attach a temporary, independent (grouped) view of a tmux session/window.
+# Meant to be run inside a fresh terminal window so you can move it to a
+# second screen. Closing this terminal drops only the view, not the window.
+#
+# Usage: tmux-popout [session] [window-index]
+src="${1:-main}"
+win="$2"
+# destroy-unattached on the *grouped* session cleans it up when this window
+# closes, without touching the original session or its windows.
+if [ -n "$win" ]; then
+  exec tmux new-session -t "$src" \; set-option destroy-unattached on \; select-window -t "$src:$win"
+else
+  exec tmux new-session -t "$src" \; set-option destroy-unattached on
+fi

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Launch a grouped tmux view in a NEW Windows Terminal window, maximized on
+# the monitor OPPOSITE the one the current terminal window is on.
+#
+# Figures out the current terminal's monitor via the Win32 foreground window,
+# then targets the other screen. Falls back to plain fullscreen on a single
+# monitor or if detection fails.
+#
+# Usage: tmux-popout-launch [session] [window-index]
+src="${1:-main}"
+win="$2"
+
+read -r -d '' PS <<'PSEOF'
+$ProgressPreference='SilentlyContinue'
+Add-Type -AssemblyName System.Windows.Forms
+$sig=@"
+using System;using System.Runtime.InteropServices;
+public class W{
+ [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+ [StructLayout(LayoutKind.Sequential)] public struct RECT{public int Left,Top,Right,Bottom;}
+ [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h,out RECT r);
+}
+"@
+Add-Type $sig
+$h=[W]::GetForegroundWindow();$r=New-Object W+RECT;[void][W]::GetWindowRect($h,[ref]$r)
+$cx=($r.Left+$r.Right)/2;$cy=($r.Top+$r.Bottom)/2
+$screens=[System.Windows.Forms.Screen]::AllScreens
+$cur=$screens|?{$cx -ge $_.Bounds.Left -and $cx -lt $_.Bounds.Right -and $cy -ge $_.Bounds.Top -and $cy -lt $_.Bounds.Bottom}|Select-Object -First 1
+if(-not $cur){$cur=[System.Windows.Forms.Screen]::PrimaryScreen}
+$other=$screens|?{$_.DeviceName -ne $cur.DeviceName}|Select-Object -First 1
+if($other){Write-Output ("POS={0},{1}" -f ($other.Bounds.Left+80),($other.Bounds.Top+80))}else{Write-Output "POS=NONE"}
+PSEOF
+
+enc=$(printf '%s' "$PS" | iconv -t UTF-16LE | base64 -w0)
+pos=$(powershell.exe -NoProfile -NonInteractive -EncodedCommand "$enc" 2>/dev/null | tr -d '\r' | sed -n 's/^POS=//p' | head -1)
+
+if [ -n "$pos" ] && [ "$pos" != "NONE" ]; then
+  wt.exe -w new --pos "$pos" -M wsl.exe -d Ubuntu-24.04 -e ~/.local/bin/tmux-popout "$src" "$win"
+else
+  # single monitor or detection failed: maximized wherever it lands
+  wt.exe -w new -M wsl.exe -d Ubuntu-24.04 -e ~/.local/bin/tmux-popout "$src" "$win"
+fi
