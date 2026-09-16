@@ -48,6 +48,11 @@
             "type": "command",
             "command": "~/.claude/hooks/tmux-claude-state.sh waiting 2>/dev/null || true",
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/claude-notify.sh 2>/dev/null || true",
+            "async": true
           }
         ]
       }
@@ -73,6 +78,16 @@
             "async": true
           }
         ]
+      },
+      {
+        "matcher": "permission_prompt|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/claude-notify.sh 2>/dev/null || true",
+            "async": true
+          }
+        ]
       }
     ],
     "Stop": [
@@ -81,6 +96,11 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/tmux-claude-state.sh waiting 2>/dev/null || true",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/claude-notify.sh 2>/dev/null || true",
             "async": true
           }
         ]
@@ -103,6 +123,18 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/tmux-claude-state.sh clear 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/tmux-claude-state.sh waiting 2>/dev/null || true",
             "async": true
           }
         ]
