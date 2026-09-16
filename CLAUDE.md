@@ -15,6 +15,7 @@ The dotfiles are organized by tool/application as Stow packages:
 - `vim/` - Contains `.vimrc` with Vundle plugin manager configuration
 - `zsh/` - Contains `.zshrc` with Oh My Zsh, Powerlevel10k, and vi-mode configuration
 - `i3/` - Contains i3 window manager configuration with custom keybindings
+- `claude/` - Claude Code user `settings.json` and hook scripts under `.claude/` (tmux tab coloring by session state)
 - `install.sh` - Automated bootstrap script for complete environment setup
 
 ## Using GNU Stow

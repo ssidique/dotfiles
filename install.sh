@@ -305,7 +305,7 @@ if [ -f .gitmodules ]; then
 fi
 
 # List of packages to stow
-PACKAGES=("git" "tmux" "vim" "nvim" "zsh" "tldr")
+PACKAGES=("git" "tmux" "vim" "nvim" "zsh" "tldr" "claude")
 
 for package in "${PACKAGES[@]}"; do
     if [ -d "$package" ]; then
