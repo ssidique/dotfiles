@@ -7,7 +7,7 @@ $x = $t.GetElementsByTagName('text')
 $x.Item(0).AppendChild($t.CreateTextNode((& $dec $Title))) > $null
 $x.Item(1).AppendChild($t.CreateTextNode((& $dec $Body))) > $null
 # A registered AppUserModelId makes Windows label the toast "Claude Code" instead of PowerShell.
-$app = 'ClaudeCode.Hooks'
+$app = 'ClaudeCode.Notifications'
 $key = "HKCU:\Software\Classes\AppUserModelId\$app"
 # Icon is copied off the WSL share because Windows won't reliably load it from a \\wsl$ path.
 $icon = Join-Path $env:LOCALAPPDATA 'ClaudeCodeHooks\claude-icon.png'
