@@ -12,6 +12,6 @@ body=$(printf '%s' "$input" | jq -r '
 
 # powershell.exe needs a Windows path; resolve the stow symlink first.
 ps1=$(wslpath -w "$(readlink -f "$(dirname "$0")/toast.ps1")")
-CN_TITLE=$title CN_BODY=$body WSLENV=CN_TITLE/u:CN_BODY/u \
-  /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \
-  -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$ps1"
+/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \
+  -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$ps1" \
+  -Title "$(printf '%s' "$title" | base64 -w0)" -Body "$(printf '%s' "$body" | base64 -w0)"
