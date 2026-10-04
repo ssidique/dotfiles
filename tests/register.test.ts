@@ -1,5 +1,5 @@
 import type { On } from 'claude-code'
-import { describe, expect, test } from 'claude-code/testing'
+import { describe, expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
 const ROOT = '/repo'
@@ -46,18 +46,25 @@ const REPO: Answers = {
   grep: 'new.py\x001\x00# CLAUDE: add tests\n',
 }
 
-async function scanned($: Engine) {
-  const { text } = await $.command.run({ command: 'nvim-review-scan' })
-  return JSON.parse(text ?? '[]')
+// Runs /nvim-review; returns the prompt it submitted, or undefined if it submitted none.
+async function reviewText($: Engine, on: On): Promise<string | undefined> {
+  let submitted: string | undefined
+  on('prompt.submit', (_$, e) => {
+    submitted = e.text
+    return { drop: 'captured by test' }
+  })
+  const clock = mock.clock(on)
+  await $.command.run({ command: 'nvim-review' })
+  await clock.advance(1) // the submit is deferred past the command's own hook
+  return submitted
 }
 
 describe('scan', () => {
   test('tracked and untracked markers, all from the repo root', async ($, on) => {
     const git = fakeGit(on, REPO)
-    expect(await scanned($)).toEqual([
-      { file: 'new.py', line: 1, text: 'add tests', code: '' },
-      { file: 'src/a.py', line: 2, text: 'rename x', code: 'x = 1' },
-    ])
+    const prompt = await reviewText($, on)
+    expect(prompt).toContain('- `new.py:1` — add tests')
+    expect(prompt).toContain('- `src/a.py:2` — rename x (on: `x = 1`)')
     expect(git.calls.slice(1).every(c => c.cwd === ROOT)).toBe(true)
   })
 
@@ -69,22 +76,83 @@ describe('scan', () => {
       'merge-base HEAD main': 'def456\n',
       'diff def456': DIFF,
     })
-    expect((await scanned($)).length).toBe(2)
+    expect(await reviewText($, on)).toContain('src/a.py:2')
     expect(git.calls.some(c => c.args.startsWith('diff def456'))).toBe(true)
   })
 
   test('falls back to HEAD when no base is found', async ($, on) => {
-    const git = fakeGit(on, { ...REPO, 'symbolic-ref': null, 'merge-base': null, 'diff HEAD': DIFF })
-    expect((await scanned($)).length).toBe(2)
+    fakeGit(on, { ...REPO, 'symbolic-ref': null, 'merge-base': null, 'diff HEAD': DIFF })
+    expect(await reviewText($, on)).toContain('src/a.py:2')
   })
 
-  test('not a git repo → no markers', async ($, on) => {
+  test('not a git repo → says so, submits nothing', async ($, on) => {
     fakeGit(on, {})
-    expect(await scanned($)).toEqual([])
+    let submitted = false
+    on('prompt.submit', () => {
+      submitted = true
+      return { drop: 'x' }
+    })
+    const { text } = await $.command.run({ command: 'nvim-review' })
+    expect(text).toBe('No CLAUDE: comments found in changed files.')
+    expect(submitted).toBe(false)
   })
 
-  test('repo with no commits (diff fails) → no markers', async ($, on) => {
+  test('repo with no commits (diff fails) → submits nothing', async ($, on) => {
     fakeGit(on, { ...REPO, 'symbolic-ref': null, 'merge-base': null, diff: null })
-    expect(await scanned($)).toEqual([])
+    expect(await reviewText($, on)).toBe(undefined)
+  })
+})
+
+describe('commit guard', () => {
+  test('denies git commit while markers are pending', async ($, on) => {
+    fakeGit(on, REPO)
+    const ran = await $.tool.call({ tool: 'Bash', command: 'git commit -m wip' })
+    expect(ran.deny).toContain('2 CLAUDE: review comments unaddressed (new.py:1, src/a.py:2)')
+  })
+
+  test('lets other commands through without scanning', async ($, on) => {
+    const git = fakeGit(on, REPO)
+    on('tool.call', { tool: 'Bash' }, () => ({ result: { stdout: 'ok', stderr: '', interrupted: false } }))
+    const ran = await $.tool.call({ tool: 'Bash', command: 'git status' })
+    expect(ran.isError).not.toBe(true)
+    expect(git.calls.some(c => c.args.startsWith('diff'))).toBe(false)
+  })
+
+  test('lets git commit through with no markers', async ($, on) => {
+    fakeGit(on, {})
+    on('tool.call', { tool: 'Bash' }, () => ({ result: { stdout: 'ok', stderr: '', interrupted: false } }))
+    const ran = await $.tool.call({ tool: 'Bash', command: 'git commit -m x' })
+    expect(ran.isError).not.toBe(true)
+  })
+})
+
+describe('band', () => {
+  const BAND = {
+    plugin: 'nvim-review',
+    surface: 'terminal',
+    component: 'AbovePrompt',
+    props: { hasSurvey: false, isWorking: false },
+  } as const
+
+  test('shows the count once a scan found markers', async ($, on) => {
+    fakeGit(on, REPO)
+    mock.clock(on)
+    await $.command.run({ command: 'nvim-review' }) // the command's rescan fills the state
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ type: 'Text', text: 'review: 2 comments in 2 files — /nvim-review' })).toBeDefined()
+    await ui.unmount()
+  })
+
+  test('draws nothing with no markers', async ($, on) => {
+    fakeGit(on, {})
+    // stands in for the engine's own band, which the plugin hands over to
+    on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
+      const { Text } = $.ui.resolve(e)
+      return h(Text, null, 'engine band')
+    })
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ type: 'Text', text: /review:/ })).toBe(undefined)
+    expect(await ui.find({ type: 'Text', text: 'engine band' })).toBeDefined()
+    await ui.unmount()
   })
 })
