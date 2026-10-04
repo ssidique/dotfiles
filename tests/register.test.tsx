@@ -13,6 +13,13 @@ const DIFF = [
   '',
 ].join('\n')
 
+const REVIEW = {
+  command: 'nvim-review',
+  args: '',
+  origin: { kind: 'composer' },
+  presentation: { isFullscreen: false, columns: 120 },
+} as const
+
 type Answers = Record<string, string | null>
 
 // Answers each `git -c core.quotePath=false <args>` by the LAST key its args start with, so an
@@ -54,7 +61,7 @@ async function reviewText($: Engine, on: On): Promise<string | undefined> {
     return { drop: 'captured by test' }
   })
   const clock = mock.clock(on)
-  await $.command.run({ command: 'nvim-review' })
+  await $.command.run(REVIEW)
   await clock.advance(1) // the submit is deferred past the command's own hook
   return submitted
 }
@@ -92,7 +99,7 @@ describe('scan', () => {
       submitted = true
       return { drop: 'x' }
     })
-    const { text } = await $.command.run({ command: 'nvim-review' })
+    const { text } = await $.command.run(REVIEW)
     expect(text).toBe('No CLAUDE: comments found in changed files.')
     expect(submitted).toBe(false)
   })
@@ -131,13 +138,20 @@ describe('band', () => {
     plugin: 'nvim-review',
     surface: 'terminal',
     component: 'AbovePrompt',
-    props: { hasSurvey: false, isWorking: false },
+    props: {
+      hasSurvey: false,
+      isWorking: false,
+      maxRows: 10,
+      bodyColumns: 120,
+      scroll: { offset: 0, bodyRows: 10 },
+      view: {},
+    },
   } as const
 
   test('shows the count once a scan found markers', async ($, on) => {
     fakeGit(on, REPO)
     mock.clock(on)
-    await $.command.run({ command: 'nvim-review' }) // the command's rescan fills the state
+    await $.command.run(REVIEW) // the command's rescan fills the state
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ type: 'Text', text: 'review: 2 comments in 2 files — /nvim-review' })).toBeDefined()
     await ui.unmount()
@@ -148,7 +162,7 @@ describe('band', () => {
     // stands in for the engine's own band, which the plugin hands over to
     on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
       const { Text } = $.ui.resolve(e)
-      return h(Text, null, 'engine band')
+      return <Text>engine band</Text>
     })
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ type: 'Text', text: /review:/ })).toBe(undefined)
