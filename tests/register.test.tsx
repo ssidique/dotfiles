@@ -24,8 +24,10 @@ type Answers = Record<string, string | null>
 
 // Answers each `git -c core.quotePath=false <args>` by the LAST key its args start with, so an
 // override spread after ...REPO beats REPO's own key; null or no key → exit 1. Records every call's argv and cwd.
-function fakeGit(on: On, answers: Answers): { calls: { args: string; cwd?: string }[] } {
-  const calls: { args: string; cwd?: string }[] = []
+type GitCall = { args: string; cwd?: string }
+
+function fakeGit(on: On, answers: Answers): { calls: GitCall[] } {
+  const calls: GitCall[] = []
   on('process.run', (_$, e) => {
     const args = e.argv.slice(3).join(' ')
     calls.push({ args, cwd: e.init?.cwd })
@@ -46,7 +48,7 @@ function fakeGit(on: On, answers: Answers): { calls: { args: string; cwd?: strin
 }
 
 const REPO: Answers = {
-  'rev-parse --show-toplevel': `${ROOT}\n`,
+  'rev-parse --show-toplevel HEAD': `${ROOT}\nhead1\n`,
   'symbolic-ref --short refs/remotes/origin/HEAD': 'origin/main\n',
   'merge-base HEAD origin/main': 'abc123\n',
   'diff-index': DIFF,
@@ -149,6 +151,74 @@ describe('scan robustness', () => {
     await $.command.run(REVIEW)
     await clock.advance(1)
     expect(toasts.some(t => t.startsWith('nvim-review: could not send'))).toBe(true)
+  })
+})
+
+describe('rescanning', () => {
+  const START = { cwd: ROOT, surface: 'terminal', isInteractive: true } as const
+  const scans = (git: { calls: { args: string }[] }) =>
+    git.calls.filter(c => c.args.startsWith('diff-index')).length
+
+  // the engine's own session start and command registry, beneath the plugin
+  function engineStart(on: On) {
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    on('command.register', (_$, e) => ({ value: { command: e.name } }))
+  }
+
+  test('scans once at session start, then never while idle', async ($, on) => {
+    const git = fakeGit(on, REPO)
+    const clock = mock.clock(on)
+    engineStart(on)
+    await $.session.start(START)
+    await clock.advance(1)
+    expect(scans(git)).toBe(1)
+    await clock.advance(10 * 60 * 1000)
+    expect(scans(git)).toBe(1)
+  })
+
+  test('a submitted prompt rescans', async ($, on) => {
+    const git = fakeGit(on, REPO)
+    const clock = mock.clock(on)
+    engineStart(on)
+    on('prompt.submit', () => ({ drop: 'x' }))
+    await $.session.start(START)
+    await clock.advance(1)
+    await $.prompt.submit({ text: 'hi', wait: false, origin: { kind: 'composer' } })
+    await clock.advance(1)
+    expect(scans(git)).toBe(2)
+  })
+
+  test('a finished turn rescans', async ($, on) => {
+    const git = fakeGit(on, REPO)
+    const clock = mock.clock(on)
+    engineStart(on)
+    on('turn.complete', () => ({ text: '' }))
+    await $.session.start(START)
+    await clock.advance(1)
+    await $.turn.complete({ turnId: 't1', answer: '', durationMs: 1, isAborted: false, reason: 'answer' })
+    await clock.advance(1)
+    expect(scans(git)).toBe(2)
+  })
+
+  test('non-interactive sessions never scan in the background', async ($, on) => {
+    const git = fakeGit(on, REPO)
+    const clock = mock.clock(on)
+    engineStart(on)
+    on('prompt.submit', () => ({ drop: 'x' }))
+    await $.session.start({ ...START, isInteractive: false })
+    await $.prompt.submit({ text: 'hi', wait: false, origin: { kind: 'composer' } })
+    await clock.advance(60000)
+    expect(scans(git)).toBe(0)
+  })
+
+  test('the branch base is looked up once per HEAD', async ($, on) => {
+    const git = fakeGit(on, REPO)
+    on('prompt.submit', () => ({ drop: 'x' }))
+    const clock = mock.clock(on)
+    await $.command.run(REVIEW)
+    await clock.advance(1)
+    await $.command.run(REVIEW)
+    expect(git.calls.filter(c => c.args.startsWith('merge-base')).length).toBe(1)
   })
 })
 

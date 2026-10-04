@@ -4,8 +4,8 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Marker } from '../types'
 import { bandLabel, buildReviewPrompt, commitDenial, countLabel, isCommit } from './markers'
 import { scan } from './scan'
+import type { BaseCache } from './scan'
 
-const POLL_MS = 2000
 const markers = atom({ plugin: 'nvim-review', key: 'markers' } as const, [])
 
 async function git(
@@ -20,13 +20,24 @@ async function git(
   return ran.exitCode === 0 ? ran.stdout : undefined
 }
 
+const baseCache: BaseCache = {}
+let isInteractive = false
+
 // Rescans and stores the result, writing only on change so the band redraws only then.
 async function refresh($: EngineInterface): Promise<Marker[]> {
-  const found = await scan((args, cwd) => git($, args, cwd))
+  const found = await scan((args, cwd) => git($, args, cwd), baseCache)
   if (JSON.stringify(found) !== JSON.stringify(await read($, markers))) {
     await update($, markers, () => found)
   }
   return found
+}
+
+// Activity in the session refreshes the band; nothing scans while it's idle. Deferred so the
+// event isn't held up by git, and the base is looked up again since a fetch may have moved it.
+function rescan($: EngineInterface) {
+  if (!isInteractive) return
+  baseCache.head = undefined
+  $.clock.after(0, () => void refresh($))
 }
 
 async function sendReview($: EngineInterface): Promise<string> {
@@ -42,20 +53,24 @@ async function sendReview($: EngineInterface): Promise<string> {
 }
 
 export const register: Register = on => {
-  let isScanning = false
-
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'nvim-review',
       description: 'Have Claude address the CLAUDE: comments in changed files',
     })
-    $.clock.every(POLL_MS, () => {
-      if (isScanning) return
-      isScanning = true
-      void refresh($).finally(() => {
-        isScanning = false
-      })
-    })
+    // a -p or SDK session has no band to keep fresh
+    isInteractive = e.isInteractive
+    rescan($)
+    return next(e)
+  })
+
+  on('prompt.submit', ($, e, next) => {
+    rescan($)
+    return next(e)
+  })
+
+  on('turn.complete', ($, e, next) => {
+    rescan($)
     return next(e)
   })
 

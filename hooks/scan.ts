@@ -4,6 +4,9 @@ import { collectMarkers, parseDiff, parseGrep } from './markers'
 const GREP_BATCH = 100
 
 // Runs `git <args>` (in `cwd` when given); stdout on exit 0, otherwise undefined.
+// The branch base for one HEAD, so a quiet poll skips the merge-base lookup.
+export type BaseCache = { head?: string; base?: string }
+
 export type Git = (args: readonly string[], cwd?: string) => Promise<string | undefined>
 
 async function findBase(git: Git, root: string): Promise<string> {
@@ -19,12 +22,16 @@ async function findBase(git: Git, root: string): Promise<string> {
   return 'HEAD'
 }
 
-export async function scan(git: Git): Promise<Marker[]> {
+export async function scan(git: Git, cache: BaseCache): Promise<Marker[]> {
   try {
-    const root = (await git(['rev-parse', '--show-toplevel']))?.trim()
-    if (!root) return []
+    const [root, head] = (await git(['rev-parse', '--show-toplevel', 'HEAD']))?.trim().split('\n') ?? []
+    if (!root || !head) return []
 
-    const base = await findBase(git, root)
+    if (cache.head !== head || cache.base === undefined) {
+      cache.base = await findBase(git, root)
+      cache.head = head
+    }
+    const base = cache.base
     // plumbing diff-index never refreshes the index, so polling can't hold .git/index.lock
     // against the user's own commits; -G keeps only files whose changes mention a marker
     const diff = await git(

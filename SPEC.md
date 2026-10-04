@@ -53,11 +53,19 @@ rare.
 
 ## Band (above the prompt)
 
-- `session.start` starts `$.clock.every(2000)` running `scan`; the result is
-  stored in `$.state` and the band redraws only when it changes.
+- No timer: nothing scans while a session is idle, so many open sessions cost
+  nothing. An interactive session rescans at session start, on every
+  submitted prompt and when each turn ends (deferred a tick, so the scan
+  never holds the event up). Non-interactive sessions (`-p`, SDK) never
+  rescan in the background. Chosen 2026-10-03 over fixed and backoff polling
+  because the user runs many sessions at once.
+- The branch base is cached per HEAD and dropped on each of those rescans.
+- The result is stored in `$.state`; the band redraws only when it changes.
 - 0 markers → draw nothing (band hidden).
 - Otherwise: `review: N comments in M files — /nvim-review`, with a
-  "Send to Claude" button that does what the command does.
+  "Send to Claude" button that does what the command does. After commenting
+  in nvim the count updates on your next interaction; `/nvim-review` always
+  rescans, so it never acts on a stale count.
 
 ## `/nvim-review` command
 
