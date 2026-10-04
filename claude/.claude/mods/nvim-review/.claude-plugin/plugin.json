@@ -1,0 +1,6 @@
+{
+  "name": "nvim-review",
+  "version": "0.1.0",
+  "description": "Address CLAUDE: review comments left in changed files",
+  "types": "./types/index.d.ts"
+}
