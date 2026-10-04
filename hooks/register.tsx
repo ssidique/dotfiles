@@ -33,7 +33,11 @@ async function sendReview($: EngineInterface): Promise<string> {
   const found = await refresh($)
   if (found.length === 0) return 'No CLAUDE: comments found in changed files.'
   // submitting from inside the command's hook would wait on the turn that hook holds
-  $.clock.after(0, () => void $.prompt.submit({ text: buildReviewPrompt(found) }))
+  $.clock.after(0, () => {
+    $.prompt
+      .submit({ text: buildReviewPrompt(found) })
+      .catch((err: unknown) => $.ui.toast(`nvim-review: could not send the comments: ${String(err)}`))
+  })
   return `Sending ${countLabel(found)} to Claude.`
 }
 

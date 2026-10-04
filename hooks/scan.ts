@@ -1,6 +1,8 @@
 import type { Marker } from '../types'
 import { collectMarkers, parseDiff, parseGrep } from './markers'
 
+const GREP_BATCH = 100
+
 // Runs `git <args>` (in `cwd` when given); stdout on exit 0, otherwise undefined.
 export type Git = (args: readonly string[], cwd?: string) => Promise<string | undefined>
 
@@ -23,8 +25,10 @@ export async function scan(git: Git): Promise<Marker[]> {
     if (!root) return []
 
     const base = await findBase(git, root)
+    // plumbing diff-index never refreshes the index, so polling can't hold .git/index.lock
+    // against the user's own commits; -G keeps only files whose changes mention a marker
     const diff = await git(
-      ['diff', base, '-U1', '--no-color', '--no-ext-diff', '--src-prefix=a/', '--dst-prefix=b/'],
+      ['diff-index', '-p', '-U1', '-M', '-GCLAUDE:', '--no-color', '--src-prefix=a/', '--dst-prefix=b/', base],
       root,
     )
     if (diff === undefined) return []
@@ -33,12 +37,18 @@ export async function scan(git: Git): Promise<Marker[]> {
     const untracked = (await git(['ls-files', '--others', '--exclude-standard', '-z'], root))
       ?.split('\0')
       .filter(Boolean)
-    if (untracked !== undefined && untracked.length > 0) {
-      const found = await git(
-        ['grep', '-n', '-z', '-I', '-A1', '--untracked', '-e', 'CLAUDE:', '--', ...untracked],
-        root,
-      )
-      lines.push(...parseGrep(found ?? ''))
+    try {
+      // batched so a large untracked tree can't overflow the argument list
+      for (let i = 0; i < (untracked?.length ?? 0); i += GREP_BATCH) {
+        const batch = untracked?.slice(i, i + GREP_BATCH) ?? []
+        const found = await git(
+          ['grep', '-n', '-z', '-I', '-A1', '--untracked', '-e', 'CLAUDE:', '--', ...batch],
+          root,
+        )
+        lines.push(...parseGrep(found ?? ''))
+      }
+    } catch {
+      // keep the tracked markers when the untracked search fails
     }
 
     return collectMarkers(lines)

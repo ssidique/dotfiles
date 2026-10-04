@@ -31,6 +31,7 @@ function fakeGit(on: On, answers: Answers): { calls: { args: string; cwd?: strin
     calls.push({ args, cwd: e.init?.cwd })
     const key = Object.keys(answers).filter(k => args.startsWith(k)).at(-1)
     const out = key === undefined ? null : answers[key]
+    if (out === 'THROW') throw new Error('spawn failed')
     return {
       value: {
         exitCode: out === null || out === undefined ? 1 : 0,
@@ -48,7 +49,7 @@ const REPO: Answers = {
   'rev-parse --show-toplevel': `${ROOT}\n`,
   'symbolic-ref --short refs/remotes/origin/HEAD': 'origin/main\n',
   'merge-base HEAD origin/main': 'abc123\n',
-  'diff abc123': DIFF,
+  'diff-index': DIFF,
   'ls-files': 'new.py\0',
   grep: 'new.py\x001\x00# CLAUDE: add tests\n',
 }
@@ -81,15 +82,15 @@ describe('scan', () => {
       'symbolic-ref': null,
       'merge-base HEAD origin/main': null,
       'merge-base HEAD main': 'def456\n',
-      'diff def456': DIFF,
     })
     expect(await reviewText($, on)).toContain('src/a.py:2')
-    expect(git.calls.some(c => c.args.startsWith('diff def456'))).toBe(true)
+    expect(git.calls.some(c => c.args.startsWith('diff-index') && c.args.endsWith(' def456'))).toBe(true)
   })
 
   test('falls back to HEAD when no base is found', async ($, on) => {
-    fakeGit(on, { ...REPO, 'symbolic-ref': null, 'merge-base': null, 'diff HEAD': DIFF })
+    const git = fakeGit(on, { ...REPO, 'symbolic-ref': null, 'merge-base': null })
     expect(await reviewText($, on)).toContain('src/a.py:2')
+    expect(git.calls.some(c => c.args.startsWith('diff-index') && c.args.endsWith(' HEAD'))).toBe(true)
   })
 
   test('not a git repo → says so, submits nothing', async ($, on) => {
@@ -105,8 +106,49 @@ describe('scan', () => {
   })
 
   test('repo with no commits (diff fails) → submits nothing', async ($, on) => {
-    fakeGit(on, { ...REPO, 'symbolic-ref': null, 'merge-base': null, diff: null })
+    fakeGit(on, { ...REPO, 'symbolic-ref': null, 'merge-base': null, 'diff-index': null })
     expect(await reviewText($, on)).toBe(undefined)
+  })
+})
+
+describe('scan robustness', () => {
+  test('reads tracked changes with plumbing diff-index, never porcelain diff', async ($, on) => {
+    const git = fakeGit(on, REPO)
+    await reviewText($, on)
+    expect(git.calls.map(c => c.args)).toContain(
+      'diff-index -p -U1 -M -GCLAUDE: --no-color --src-prefix=a/ --dst-prefix=b/ abc123',
+    )
+    expect(git.calls.some(c => c.args.startsWith('diff '))).toBe(false)
+  })
+
+  test('a failed untracked search keeps the tracked markers', async ($, on) => {
+    fakeGit(on, { ...REPO, grep: 'THROW' })
+    const prompt = await reviewText($, on)
+    expect(prompt).toContain('src/a.py:2')
+    expect(prompt).not.toContain('new.py')
+  })
+
+  test('untracked files are searched in batches', async ($, on) => {
+    const files = Array.from({ length: 250 }, (_, i) => `f${i}.py`)
+    const git = fakeGit(on, { ...REPO, 'ls-files': files.join('\0') + '\0' })
+    await reviewText($, on)
+    expect(git.calls.filter(c => c.args.startsWith('grep')).length).toBe(3)
+  })
+
+  test('a failed submit is reported, not swallowed', async ($, on) => {
+    fakeGit(on, REPO)
+    const toasts: string[] = []
+    on('ui.toast', (_$, e) => {
+      toasts.push(e.text)
+      return { value: undefined }
+    })
+    on('prompt.submit', () => {
+      throw new Error('refused')
+    })
+    const clock = mock.clock(on)
+    await $.command.run(REVIEW)
+    await clock.advance(1)
+    expect(toasts.some(t => t.startsWith('nvim-review: could not send'))).toBe(true)
   })
 })
 

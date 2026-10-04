@@ -6,6 +6,9 @@ const MARKER = /(?:^|\s)(?:#|\/\/|--|;|\/\*|<!--|\*)\s*CLAUDE:(.*)$/
 const HUNK = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/
 const COMMIT = /\bgit\b[^\n;&|]*\bcommit\b/
 
+// splits git output into lines, dropping the \r of files saved with CRLF endings
+const splitLines = (out: string) => out.split('\n').map(l => l.replace(/\r$/, ''))
+
 export function parseMarkerLine(
   line: string,
 ): { text: string; code: string; isOwnLine: boolean } | undefined {
@@ -25,7 +28,7 @@ export function parseDiff(diff: string): SourceLine[] {
   let next = 0
   let isInHeader = false
 
-  for (const raw of diff.split('\n')) {
+  for (const raw of splitLines(diff)) {
     if (raw.startsWith('diff --git ')) {
       isInHeader = true
       file = undefined
@@ -54,7 +57,7 @@ export function parseDiff(diff: string): SourceLine[] {
 export function parseGrep(out: string): SourceLine[] {
   const lines: SourceLine[] = []
 
-  for (const raw of out.split('\n')) {
+  for (const raw of splitLines(out)) {
     const [file, line, ...rest] = raw.split('\0')
     // '--' group separators and the trailing empty line have no \0 fields
     if (file === undefined || line === undefined || rest.length === 0) continue

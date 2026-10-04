@@ -92,6 +92,17 @@ describe('parseDiff', () => {
   })
 })
 
+describe('CRLF files', () => {
+  test('parseDiff drops the carriage return', () => {
+    const diff = 'diff --git a/w.py b/w.py\r\n--- a/w.py\r\n+++ b/w.py\r\n@@ -0,0 +1 @@\r\n+# CLAUDE: crlf\r\n'
+    expect(collectMarkers(parseDiff(diff))).toEqual([{ file: 'w.py', line: 1, text: 'crlf', code: '' }])
+  })
+
+  test('parseGrep drops the carriage return', () => {
+    expect(parseGrep('w.py\x001\x00x = 1  # CLAUDE: crlf\r\n')[0]?.content).toBe('x = 1  # CLAUDE: crlf')
+  })
+})
+
 describe('parseGrep', () => {
   test('reads -z output with context lines and separators', () => {
     const out = 'new file.py\x002\x00# CLAUDE: one\nnew file.py\x003\x00code()\n--\nnew file.py\x005\x00# CLAUDE: two\n'
