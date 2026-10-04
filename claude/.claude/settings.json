@@ -1,6 +1,6 @@
 {
   "env": {
-    "CLAUDE_CODE_PLUGIN_DIRS": "~/.claude/mods/nvim-review"
+    "CLAUDE_CODE_PLUGIN_DIRS": "~/.claude/mods/nvim-review:~/.claude/mods/nvim-pr-review"
   },
   "permissions": {
     "defaultMode": "auto"

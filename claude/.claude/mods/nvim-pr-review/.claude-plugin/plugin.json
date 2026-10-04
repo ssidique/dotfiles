@@ -1,0 +1,1 @@
+{ "name": "nvim-pr-review", "version": "0.2.0", "description": "Gate gh pr create on a diffview review in your nvim: accept, reject, or hand your edits back to Claude", "types": "./types/index.d.ts" }
