@@ -2,32 +2,8 @@
   "env": {
     "CLAUDE_CODE_PLUGIN_DIRS": "~/.claude/mods/nvim-review"
   },
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.claude/statusline-command.sh"
-  },
   "permissions": {
     "defaultMode": "auto"
-  },
-  "enabledPlugins": {
-    "superpowers@claude-plugins-official": true
-  },
-  "alwaysThinkingEnabled": true,
-  "tui": "fullscreen",
-  "voice": {
-    "enabled": false,
-    "mode": "hold"
-  },
-  "skipAutoPermissionPrompt": true,
-  "voiceEnabled": false,
-  "agentPushNotifEnabled": true,
-  "extraKnownMarketplaces": {
-    "superpowers-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "obra/superpowers-marketplace"
-      }
-    }
   },
   "hooks": {
     "UserPromptSubmit": [
@@ -152,5 +128,30 @@
         ]
       }
     ]
-  }
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true,
+    "cc-plugin-you-should-know@builtin": true
+  },
+  "extraKnownMarketplaces": {
+    "superpowers-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
+    }
+  },
+  "alwaysThinkingEnabled": true,
+  "tui": "fullscreen",
+  "voice": {
+    "enabled": false,
+    "mode": "hold"
+  },
+  "agentPushNotifEnabled": true,
+  "skipAutoPermissionPrompt": true,
+  "voiceEnabled": false
 }

@@ -506,3 +506,26 @@ command -v direnv &> /dev/null && eval "$(direnv hook zsh)"
 # Secrets and AWS profile (kept in separate, un-committed files)
 [ -f ~/.anthropic_keys ] && source ~/.anthropic_keys
 [ -f ~/.aws_aliases ] && source ~/.aws_aliases
+
+# Open a file (or URL) in Windows Firefox from WSL
+ff() {
+  local firefox="/mnt/c/Program Files/Mozilla Firefox/firefox.exe"
+  [ -z "$1" ] && { echo "usage: ff <file|url>" >&2; return 1; }
+  if [ -e "$1" ]; then
+    "$firefox" "$(wslpath -w "$1")"
+  else
+    "$firefox" "$1"
+  fi
+}
+
+# wt - Fuzzy jump between git worktrees (wt <query> jumps directly on a single match)
+wt() {
+  local line
+  git rev-parse --git-common-dir >/dev/null 2>&1 || { echo "wt: not in a git repo" >&2; return 1; }
+  line=$(git worktree list --porcelain |
+    awk '/^worktree /{p=$2} /^branch /{sub("refs/heads/","",$2); printf "%s\t%s\n", p, $2} /^detached$/{printf "%s\t(detached)\n", p}' |
+    column -t -s $'\t' |
+    fzf --query="${1:-}" --select-1 --exit-0 --height=40% --layout=reverse \
+        --preview 'git -C {1} log --oneline --color=always -8; echo; git -C {1} status -s') || return
+  [ -n "$line" ] && cd "${line%% *}"
+}
